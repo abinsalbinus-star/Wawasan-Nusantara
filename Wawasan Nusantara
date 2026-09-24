@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Wawasan Nusantara - Open World PPKn</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
+        }
+        #game-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        /* UI Overlay */
+        #ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 15px;
+        }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+            pointer-events: none;
+        }
+        .stats {
+            background: rgba(0, 20, 40, 0.8);
+            backdrop-filter: blur(8px);
+            border: 2px solid #ffd700;
+            border-radius: 12px;
+            padding: 8px 14px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            gap: 15px;
+            pointer-events: auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .stats span {
+            color: #ffd700;
+        }
+        .island-info {
+            background: rgba(0, 20, 40, 0.85);
+            backdrop-filter: blur(8px);
+            border: 2px solid #00e5ff;
+            border-radius: 12px;
+            padding: 6px 12px;
+            color: #fff;
+            font-size: 12px;
+            text-align: right;
+            pointer-events: auto;
+            max-width: 45%;
+        }
+        .island-info .name {
+            color: #00e5ff;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .bottom-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            width: 100%;
+            pointer-events: none;
+        }
+        .joystick-area {
+            width: 130px;
+            height: 130px;
+            pointer-events: auto;
+            position: relative;
+            touch-action: none;
+        }
+        .joystick-base {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 215, 0, 0.15);
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+        }
+        .joystick-knob {
+            width: 55px;
+            height: 55px;
+            background: radial-gradient(circle, #ffd700, #ff8c00);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+            border: 2px solid #fff;
+        }
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+            align-items: flex-end;
+        }
+        .btn {
+            background: rgba(0, 20, 40, 0.85);
+            backdrop-filter: blur(8px);
+            border: 2px solid #ffd700;
+            border-radius: 50px;
+            padding: 12px 24px;
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            min-width: 110px;
+            text-align: center;
+        }
+        .btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 215, 0, 0.3);
+        }
+        .btn.interact {
+            border-color: #00e5ff;
+            color: #00e5ff;
+        }
+        .btn.quiz {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(6px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            pointer-events: auto;
+            padding: 20px;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: linear-gradient(145deg, #0a1628, #1a2a4a);
+            border: 2px solid #ffd700;
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 400px;
+            width: 100%;
+            color: #fff;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.3);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-content h2 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+            padding-bottom: 10px;
+        }
+        .modal-content p {
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #c0c8d8;
+        }
+        .modal-content .question {
+            font-size: 16px;
+            font-weight: bold;
+            color: #00e5ff;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        .option-btn {
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        .option-btn:active {
+            background: rgba(255, 215, 0, 0.2);
+            transform: scale(0.98);
+        }
+        .option-btn.correct {
+            background: rgba(0, 200, 100, 0.3);
+            border-color: #00c864;
+        }
+        .option-btn.wrong {
+            background: rgba(255, 50, 50, 0.3);
+            border-color: #ff3232;
+        }
+        .feedback {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .feedback.correct {
+            background: rgba(0, 200, 100, 0.2);
+            color: #00c864;
+            border: 1px solid #00c864;
+        }
+        .feedback.wrong {
+            background: rgba(255, 50, 50, 0.2);
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-actions .btn {
+            flex: 1;
+            min-width: auto;
+            padding: 12px;
+            font-size: 13px;
+        }
+        /* Mini Map */
+        .minimap {
+            position: fixed;
+            top: 80px;
+            right: 15px;
+            width: 90px;
+            height: 90px;
+            background: rgba(0, 20, 40, 0.8);
+            border: 2px solid #00e5ff;
+            border-radius: 10px;
+            z-index: 10;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .minimap canvas {
+            width: 100%;
+            height: 100%;
+        }
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(0, 20, 40, 0.95);
+            border: 2px solid #ffd700;
+            border-radius: 15px;
+            padding: 20px 30px;
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 18px;
+            text-align: center;
+            z-index: 200;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.4);
+        }
+        .toast.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+        /* Loading Screen */
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a1628;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: #ffd700;
+            transition: opacity 0.8s;
+        }
+        #loading h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 215, 0, 0.2);
+            border-top-color: #ffd700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .progress-text {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #8899aa;
+        }
+        /* Scrollbar */
+        .modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .modal-content::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+        }
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #ffd700;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="loading">
+    <h1>🌏 Wawasan Nusantara</h1>
+    <div class="loader"></div>
+    <div class="progress-text">Memuat dunia...</div>
+</div>
+
+<div id="game-container"></div>
+
+<div id="ui-overlay">
+    <div class="top-bar">
+        <div class="stats">
+            <div>⭐ Skor: <span id="score">0</span></div>
+            <div>📜 Misi: <span id="missions">0</span>/7</div>
+        </div>
+        <div class="island-info">
+            <div class="name" id="island-name">Laut Lepas</div>
+            <div id="island-desc">Jelajahi nusantara</div>
+        </div>
+    </div>
+    
+    <div class="minimap" id="minimap">
+        <canvas id="minimap-canvas" width="180" height="180"></canvas>
+    </div>
+    
+    <div class="bottom-controls">
+        <div class="joystick-area" id="joystick-area">
+            <div class="joystick-base">
+                <div class="joystick-knob" id="joystick-knob"></div>
+            </div>
+        </div>
+        <div class="action-buttons">
+            <button class="btn interact" id="btn-interact">🔍 Jelajahi</button>
+            <button class="btn quiz" id="btn-quiz">📝 Kuis</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Info -->
+<div class="modal" id="modal-info">
+    <div class="modal-content">
+        <h2 id="info-title">📖 Informasi</h2>
+        <p id="info-text"></p>
+        <div class="modal-actions">
+            <button class="btn" id="btn-close-info">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Quiz -->
+<div class="modal" id="modal-quiz">
+    <div class="modal-content">
+        <h2 id="quiz-title">📝 Kuis Wawasan Nusantara</h2>
+        <div class="question" id="quiz-question"></div>
+        <div id="quiz-options"></div>
+        <div class="feedback" id="quiz-feedback" style="display:none;"></div>
+        <div class="modal-actions">
+            <button class="btn" id="btn-close-quiz">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Complete -->
+<div class="modal" id="modal-complete">
+    <div class="modal-content" style="text-align:center;">
+        <h2>🎉 Selamat!</h2>
+        <p>Kamu telah menyelesaikan semua misi Wawasan Nusantara!</p>
+        <p style="color:#ffd700; font-size:24px; font-weight:bold;" id="final-score">Skor: 0</p>
+        <p style="font-size:12px; color:#8899aa;">Kamu adalah generasi penerus yang memahami Wawasan Nusantara! 🇮🇩</p>
+        <div class="modal-actions">
+            <button class="btn" id="btn-restart">Main Lagi</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ==================== DATA WAWASAN NUSANTARA ====================
+const ISLAND_DATA = {
+    sumatra: {
+        name: "Pulau Sumatra",
+        desc: "Pulau terbesar ke-6 di dunia, kaya akan sumber daya alam",
+        info: "Sumatra adalah pulau terbesar keenam di dunia. Wilayahnya meliputi Aceh, Sumatera Utara, Sumatera Barat, Riau, Jambi, Sumatera Selatan, Bengkulu, dan Lampung. Sumatra memiliki peran penting dalam Wawasan Nusantara sebagai salah satu pulau utama yang menjaga kedaulatan dan keutuhan NKRI.",
+        quiz: {
+            question: "Sumatra merupakan pulau terbesar ke-berapa di dunia?",
+            options: ["Ke-5", "Ke-6", "Ke-7", "Ke-8"],
+            answer: 1,
+            explanation: "Sumatra adalah pulau terbesar keenam di dunia dengan luas sekitar 473.481 km²."
+        }
+    },
+    jawa: {
+        name: "Pulau Jawa",
+        desc: "Pusat pemerintahan dan perekonomian Indonesia",
+        info: "Jawa adalah pulau terpadat di Indonesia dan menjadi pusat pemerintahan, ekonomi, dan budaya. Di Jawa terdapat ibu kota negara Jakarta serta kota-kota besar seperti Surabaya, Bandung, dan Semarang. Jawa menjadi simbol persatuan dan kesatuan bangsa Indonesia.",
+        quiz: {
+            question: "Apa peran utama Pulau Jawa dalam Wawasan Nusantara?",
+            options: ["Sebagai lumbung pangan", "Sebagai pusat pemerintahan dan ekonomi", "Sebagai pertahanan terdepan", "Sebagai pusat kebudayaan timur"],
+            answer: 1,
+            explanation: "Jawa merupakan pusat pemerintahan dan perekonomian Indonesia, menjadikannya inti dari Wawasan Nusantara."
+        }
+    },
+    kalimantan: {
+        name: "Pulau Kalimantan",
+        desc: "Pulau terbesar di Indonesia, dikenal sebagai Borneo",
+        info: "Kalimantan adalah pulau terbesar di Indonesia dan ketiga terbesar di dunia. Kalimantan dikenal sebagai paru-paru dunia karena hutan tropisnya yang luas. Pulau ini berbatasan langsung dengan Malaysia, menjadikannya wilayah strategis dalam menjaga kedaulatan NKRI.",
+        quiz: {
+            question: "Mengapa Kalimantan disebut sebagai paru-paru dunia?",
+            options: ["Karena penduduknya banyak", "Karena hutan tropisnya yang luas", "Karena tambangnya", "Karena pantainya"],
+            answer: 1,
+            explanation: "Kalimantan memiliki hutan tropis yang sangat luas yang menghasilkan oksigen bagi dunia."
+        }
+    },
+    sulawesi: {
+        name: "Pulau Sulawesi",
+        desc: "Pulau dengan bentuk unik menyerupai huruf K",
+        info: "Sulawesi memiliki bentuk yang unik menyerupai huruf K. Pulau ini terkenal dengan keanekaragaman hayati dan budaya. Sulawesi menjadi salah satu pulau utama yang menjaga keseimbangan wilayah Indonesia bagian tengah.",
+        quiz: {
+            question: "Apa keunikan bentuk Pulau Sulawesi?",
+            options: ["Menyerupai huruf U", "Menyerupai huruf K", "Menyerupai huruf O", "Menyerupai huruf S"],
+            answer: 1,
+            explanation: "Sulawesi memiliki bentuk yang unik menyerupai huruf K."
+        }
+    },
+    papua: {
+        name: "Pulau Papua",
+        desc: "Pulau terbesar kedua di dunia, kaya akan budaya",
+        info: "Papua adalah pulau terbesar kedua di dunia setelah Greenland. Papua memiliki kekayaan budaya dan alam yang luar biasa. Dalam Wawasan Nusantara, Papua merupakan bagian integral NKRI yang harus dijaga keutuhannya.",
+        quiz: {
+            question: "Papua adalah pulau terbesar ke-berapa di dunia?",
+            options: ["Ke-1", "Ke-2", "Ke-3", "Ke-4"],
+            answer: 1,
+            explanation: "Papua adalah pulau terbesar kedua di dunia setelah Greenland."
+        }
+    },
+    bali: {
+        name: "Pulau Bali",
+        desc: "Pulau dewata, ikon pariwisata Indonesia",
+        info: "Bali dikenal sebagai Pulau Dewata dan menjadi ikon pariwisata Indonesia. Bali memiliki budaya yang unik dan menjadi jendela Indonesia di mata dunia. Bali menunjukkan bagaimana keberagaman budaya dapat menjadi kekuatan bangsa.",
+        quiz: {
+            question: "Apa julukan Pulau Bali?",
+            options: ["Pulau Seribu", "Pulau Dewata", "Pulau Rempah", "Pulau Khatulistiwa"],
+            answer: 1,
+            explanation: "Bali dijuluki Pulau Dewata karena banyaknya pura dan tradisi keagamaan yang kuat."
+        }
+    },
+    maluku: {
+        name: "Kepulauan Maluku",
+        desc: "Kepulauan rempah, pusat perdagangan dunia",
+        info: "Maluku dikenal sebagai Kepulauan Rempah karena menghasilkan rempah-rempah seperti cengkih dan pala. Maluku memiliki peran historis penting dalam perdagangan dunia dan menjadi bagian penting dari Wawasan Nusantara sebagai wilayah kepulauan.",
+        quiz: {
+            question: "Apa julukan Kepulauan Maluku?",
+            options: ["Kepulauan Seribu", "Kepulauan Rempah", "Kepulauan Dewata", "Kepulauan Karang"],
+            answer: 1,
+            explanation: "Maluku dijuluki Kepulauan Rempah karena menghasilkan rempah-rempah berkualitas tinggi."
+        }
+    }
+};
+
+// ==================== GAME STATE ====================
+const gameState = {
+    score: 0,
+    missionsCompleted: 0,
+    visitedIslands: [],
+    currentIsland: null,
+    playerPos: new THREE.Vector3(0, 0, 0),
+    playerRotation: 0,
+    isMoving: false,
+    completedQuizzes: [],
+    savedData: null
+};
+
+// ==================== LOCAL STORAGE ====================
+function saveGame() {
+    const data = {
+        score: gameState.score,
+        missionsCompleted: gameState.missionsCompleted,
+        visitedIslands: [...gameState.visitedIslands],
+        completedQuizzes: [...gameState.completedQuizzes],
+        timestamp: Date.now()
+    };
+    try {
+        localStorage.setItem('wawasanNusantaraSave', JSON.stringify(data));
+    } catch(e) {
+        console.log('Save failed:', e);
+    }
+}
+
+function loadGame() {
+    try {
+        const saved = localStorage.getItem('wawasanNusantaraSave');
+        if (saved) {
+            const data = JSON.parse(saved);
+            gameState.score = data.score || 0;
+            gameState.missionsCompleted = data.missionsCompleted || 0;
+            gameState.visitedIslands = data.visitedIslands || [];
+            gameState.completedQuizzes = data.completedQuizzes || [];
+            gameState.savedData = data;
+            return true;
+        }
+    } catch(e) {
+        console.log('Load failed:', e);
+    }
+    return false;
+}
+
+function resetGame() {
+    localStorage.removeItem('wawasanNusantaraSave');
+    gameState.score = 0;
+    gameState.missionsCompleted = 0;
+    gameState.visitedIslands = [];
+    gameState.completedQuizzes = [];
+    updateUI();
+}
+
+// ==================== THREE.JS SETUP ====================
+let scene, camera, renderer, clock;
+let islands = [];
+let player, playerGroup;
+let sunLight, ambientLight;
+let waterMesh;
+let clouds = [];
+let stars;
+
+const worldSize = 400;
+
+function initThreeJS() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a1628);
+    scene.fog = new THREE.Fog(0x0a1628, 150, 350);
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 25, 30);
+    camera.lookAt(0, 0, 0);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    document.getElementById('game-container').appendChild(renderer.domElement);
+
+    clock = new THREE.Clock();
+
+    // Lights
+    ambientLight = new THREE.AmbientLight(0x404060, 0.8);
+    scene.add(ambientLight);
+
+    sunLight = new THREE.DirectionalLight(0xffeedd, 1.5);
+    sunLight.position.set(50, 80, 30);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 1024;
+    sunLight.shadow.mapSize.height = 1024;
+    sunLight.shadow.camera.near = 10;
+    sunLight.shadow.camera.far = 200;
+    sunLight.shadow.camera.left = -80;
+    sunLight.shadow.camera.right = 80;
+    sunLight.shadow.camera.top = 80;
+    sunLight.shadow.camera.bottom = -80;
+    scene.add(sunLight);
+
+    const hemiLight = new THREE.HemisphereLight(0x88aaff, 0x223344, 0.6);
+    scene.add(hemiLight);
+
+    // Stars
+    createStars();
+
+    // Ocean
+    createOcean();
+
+    // Islands
+    createAllIslands();
+
+    // Player
+    createPlayer();
+
+    // Clouds
+    createClouds();
+
+    // Resize handler
+    window.addEventListener('resize', onResize);
+}
+
+function createStars() {
+    const starsGeometry = new THREE.BufferGeometry();
+    const starsCount = 1500;
+    const positions = new Float32Array(starsCount * 3);
+    for (let i = 0; i < starsCount * 3; i += 3) {
+        positions[i] = (Math.random() - 0.5) * 800;
+        positions[i+1] = Math.random() * 200 + 50;
+        positions[i+2] = (Math.random() - 0.5) * 800;
+    }
+    starsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, transparent: true, opacity: 0.8 });
+    stars = new THREE.Points(starsGeometry, starsMaterial);
+    scene.add(stars);
+}
+
+function createOcean() {
+    const oceanGeometry = new THREE.PlaneGeometry(worldSize * 3, worldSize * 3, 64, 64);
+    const oceanMaterial = new THREE.MeshStandardMaterial({
+        color: 0x1a4a7a,
+        transparent: true,
+        opacity: 0.85,
+        roughness: 0.3,
+        metalness: 0.1,
+        side: THREE.DoubleSide
+    });
+    waterMesh = new THREE.Mesh(oceanGeometry, oceanMaterial);
+    waterMesh.rotation.x = -Math.PI / 2;
+    waterMesh.position.y = -2;
+    waterMesh.receiveShadow = true;
+    scene.add(waterMesh);
+}
+
+function createAllIslands() {
+    const positions = [
+        { key: 'sumatra', x: -60, z: -40 },
+        { key: 'jawa', x: -20, z: 30 },
+        { key: 'kalimantan', x: 20, z: -30 },
+        { key: 'sulawesi', x: 60, z: 10 },
+        { key: 'papua', x: 100, z: -50 },
+        { key: 'bali', x: 15, z: 65 },
+        { key: 'maluku', x: 80, z: 60 }
+    ];
+
+    positions.forEach(pos => {
+        const data = ISLAND_DATA[pos.key];
+        const island = createIsland(pos.x, pos.z, data, pos.key);
+        islands.push(island);
+    });
+}
+
+function createIsland(x, z, data, key) {
+    const group = new THREE.Group();
+    group.position.set(x, 0, z);
+
+    // Base island
+    const baseGeo = new THREE.CylinderGeometry(8, 10, 3, 8);
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0x3a6b3a, roughness: 0.9 });
+    const base = new THREE.Mesh(baseGeo, baseMat);
+    base.position.y = -1;
+    base.castShadow = true;
+    base.receiveShadow = true;
+    group.add(base);
+
+    // Beach ring
+    const beachGeo = new THREE.CylinderGeometry(10.5, 10.5, 0.8, 12);
+    const beachMat = new THREE.MeshStandardMaterial({ color: 0xeedd99, roughness: 0.8 });
+    const beach = new THREE.Mesh(beachGeo, beachMat);
+    beach.position.y = -1.8;
+    beach.receiveShadow = true;
+    group.add(beach);
+
+    // Mountain/peak
+    const peakGeo = new THREE.ConeGeometry(5, 8, 8);
+    const peakMat = new THREE.MeshStandardMaterial({ color: 0x4a7a4a, roughness: 0.7 });
+    const peak = new THREE.Mesh(peakGeo, peakMat);
+    peak.position.y = 3.5;
+    peak.castShadow = true;
+    peak.receiveShadow = true;
+    group.add(peak);
+
+    // Snow cap
+    const snowGeo = new THREE.ConeGeometry(2, 3, 8);
+    const snowMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+    const snow = new THREE.Mesh(snowGeo, snowMat);
+    snow.position.y = 6.5;
+    snow.castShadow = true;
+    group.add(snow);
+
+    // Trees
+    for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2;
+        const radius = 6 + Math.random() * 2;
+        const treeX = Math.cos(angle) * radius;
+        const treeZ = Math.sin(angle) * radius;
+        
+        const trunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 2, 6);
+        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+        trunk.position.set(treeX, 1, treeZ);
+        trunk.castShadow = true;
+        group.add(trunk);
+
+        const leavesGeo = new THREE.ConeGeometry(1.5, 3, 6);
+        const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2d5a2d });
+        const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+        leaves.position.set(treeX, 3, treeZ);
+        leaves.castShadow = true;
+        group.add(leaves);
+    }
+
+    // Floating label marker
+    const markerGeo = new THREE.SphereGeometry(0.5, 8, 8);
+    const markerMat = new THREE.MeshStandardMaterial({ 
+        color: 0xffd700, 
+        emissive: 0xffd700, 
+        emissiveIntensity: 0.8 
+    });
+    const marker = new THREE.Mesh(markerGeo, markerMat);
+    marker.position.y = 12;
+    marker.name = 'marker';
+    group.add(marker);
+
+    // Glow ring around island
+    const ringGeo = new THREE.RingGeometry(11, 12, 32);
+    const ringMat = new THREE.MeshBasicMaterial({ 
+        color: 0x00e5ff, 
+        transparent: true, 
+        opacity: 0.3, 
+        side: THREE.DoubleSide 
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = -1.9;
+    group.add(ring);
+
+    group.userData = { key, data, ring, marker };
+    scene.add(group);
+    return group;
+}
+
+function createPlayer() {
+    playerGroup = new THREE.Group();
+
+    // Body
+    const bodyGeo = new THREE.CapsuleGeometry(0.8, 1.2, 4, 8);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2255aa, roughness: 0.5 });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 1;
+    body.castShadow = true;
+    playerGroup.add(body);
+
+    // Head
+    const headGeo = new THREE.SphereGeometry(0.6, 12, 12);
+    const headMat = new THREE.MeshStandardMaterial({ color: 0xffccaa, roughness: 0.6 });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.y = 2.3;
+    head.castShadow = true;
+    playerGroup.add(head);
+
+    // Hat (Merah Putih)
+    const hatGeo = new THREE.ConeGeometry(0.7, 0.8, 8);
+    const hatMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const hat = new THREE.Mesh(hatGeo, hatMat);
+    hat.position.y = 3;
+    hat.castShadow = true;
+    playerGroup.add(hat);
+
+    // Eyes
+    const eyeGeo = new THREE.SphereGeometry(0.1, 6, 6);
+    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeL.position.set(-0.2, 2.4, 0.5);
+    playerGroup.add(eyeL);
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeR.position.set(0.2, 2.4, 0.5);
+    playerGroup.add(eyeR);
+
+    // Arms
+    const armGeo = new THREE.CapsuleGeometry(0.2, 0.8, 4, 6);
+    const armMat = new THREE.MeshStandardMaterial({ color: 0x2255aa });
+    const armL = new THREE.Mesh(armGeo, armMat);
+    armL.position.set(-0.9, 1.5, 0);
+    armL.castShadow = true;
+    playerGroup.add(armL);
+    const armR = new THREE.Mesh(armGeo, armMat);
+    armR.position.set(0.9, 1.5, 0);
+    armR.castShadow = true;
+    playerGroup.add(armR);
+
+    playerGroup.position.set(0, 0, 0);
+    playerGroup.castShadow = true;
+    scene.add(playerGroup);
+    player = playerGroup;
+}
+
+function createClouds() {
+    for (let i = 0; i < 15; i++) {
+        const cloudGroup = new THREE.Group();
+        const cloudMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff, 
+            transparent: true, 
+            opacity: 0.6,
+            roughness: 1
+        });
+        
+        for (let j = 0; j < 4; j++) {
+            const sphereGeo = new THREE.SphereGeometry(2 + Math.random() * 2, 8, 8);
+            const sphere = new THREE.Mesh(sphereGeo, cloudMat);
+            sphere.position.set(
+                (Math.random() - 0.5) * 6,
+                (Math.random() - 0.5) * 2,
+                (Math.random() - 0.5) * 4
+            );
+            sphere.castShadow = true;
+            cloudGroup.add(sphere);
+        }
+        
+        cloudGroup.position.set(
+            (Math.random() - 0.5) * worldSize,
+            30 + Math.random() * 20,
+            (Math.random() - 0.5) * worldSize
+        );
+        cloudGroup.userData.speed = 0.05 + Math.random() * 0.1;
+        scene.add(cloudGroup);
+        clouds.push(cloudGroup);
+    }
+}
+
+// ==================== PLAYER MOVEMENT ====================
+let joystickInput = { x: 0, y: 0 };
+let joystickActive = false;
+let joystickCenter = { x: 0, y: 0 };
+
+function setupJoystick() {
+    const area = document.getElementById('joystick-area');
+    const knob = document.getElementById('joystick-knob');
+    const base = area.querySelector('.joystick-base');
+    const maxDist = 40;
+
+    function getCenter() {
+        const rect = base.getBoundingClientRect();
+        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    }
+
+    function handleStart(e) {
+        e.preventDefault();
+        joystickActive = true;
+        joystickCenter = getCenter();
+        handleMove(e);
+    }
+
+    function handleMove(e) {
+        if (!joystickActive) return;
+        e.preventDefault();
+        
+        const touch = e.touches ? e.touches[0] : e;
+        const dx = touch.clientX - joystickCenter.x;
+        const dy = touch.clientY - joystickCenter.y;
+        
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const clampedDist = Math.min(dist, maxDist);
+        const angle = Math.atan2(dy, dx);
+        
+        const knobX = Math.cos(angle) * clampedDist;
+        const knobY = Math.sin(angle) * clampedDist;
+        
+        knob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+        
+        joystickInput.x = knobX / maxDist;
+        joystickInput.y = knobY / maxDist;
+    }
+
+    function handleEnd(e) {
+        e.preventDefault();
+        joystickActive = false;
+        joystickInput.x = 0;
+        joystickInput.y = 0;
+        knob.style.transform = 'translate(-50%, -50%)';
+    }
+
+    area.addEventListener('touchstart', handleStart, { passive: false });
+    area.addEventListener('touchmove', handleMove, { passive: false });
+    area.addEventListener('touchend', handleEnd, { passive: false });
+    area.addEventListener('touchcancel', handleEnd, { passive: false });
+
+    area.addEventListener('mousedown', handleStart);
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+}
+
+// ==================== GAME LOGIC ====================
+function getNearestIsland() {
+    let nearest = null;
+    let minDist = Infinity;
+    
+    islands.forEach(island => {
+        const dx = island.position.x - player.position.x;
+        const dz = island.position.z - player.position.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        
+        if (dist < minDist) {
+            minDist = dist;
+            nearest = { island, dist };
+        }
+    });
+    
+    return nearest;
+}
+
+function checkIslandProximity() {
+    const nearest = getNearestIsland();
+    const islandNameEl = document.getElementById('island-name');
+    const islandDescEl = document.getElementById('island-desc');
+    
+    if (nearest && nearest.dist < 15) {
+        const data = nearest.island.userData.data;
+        islandNameEl.textContent = data.name;
+        islandDescEl.textContent = data.desc;
+        gameState.currentIsland = nearest.island.userData.key;
+        
+        // Mark as visited
+        if (!gameState.visitedIslands.includes(nearest.island.userData.key)) {
+            // Will be marked when interaction happens
+        }
+    } else {
+        islandNameEl.textContent = "Laut Lepas";
+        islandDescEl.textContent = "Jelajahi nusantara";
+        gameState.currentIsland = null;
+    }
+}
+
+function showToast(message, duration = 2000) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), duration);
+}
+
+function updateUI() {
+    document.getElementById('score').textContent = gameState.score;
+    document.getElementById('missions').textContent = gameState.visitedIslands.length;
+}
+
+function handleInteract() {
+    const nearest = getNearestIsland();
+    if (!nearest || nearest.dist >= 15) {
+        showToast("Dekati pulau untuk menjelajah! 🏝️");
+        return;
+    }
+
+    const key = nearest.island.userData.key;
+    const data = nearest.island.userData.data;
+    
+    if (!gameState.visitedIslands.includes(key)) {
+        gameState.visitedIslands.push(key);
+        gameState.score += 10;
+        updateUI();
+        saveGame();
+        showToast("✨ Pulau baru ditemukan! +10 poin");
+    }
+
+    // Show info modal
+    document.getElementById('info-title').textContent = `📖 ${data.name}`;
+    document.getElementById('info-text').textContent = data.info;
+    document.getElementById('modal-info').classList.add('active');
+}
+
+function handleQuiz() {
+    const nearest = getNearestIsland();
+    if (!nearest || nearest.dist >= 15) {
+        showToast("Dekati pulau untuk mengerjakan kuis! 📝");
+        return;
+    }
+
+    const key = nearest.island.userData.key;
+    const data = nearest.island.userData.data;
+    
+    if (gameState.completedQuizzes.includes(key)) {
+        showToast("Kuis pulau ini sudah diselesaikan! ✅");
+        return;
+    }
+
+    // Show quiz modal
+    document.getElementById('quiz-title').textContent = `📝 Kuis: ${data.name}`;
+    document.getElementById('quiz-question').textContent = data.quiz.question;
+    
+    const optionsContainer = document.getElementById('quiz-options');
+    optionsContainer.innerHTML = '';
+    
+    data.quiz.options.forEach((option, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = option;
+        btn.onclick = () => selectQuizAnswer(index, data.quiz, key, optionsContainer);
+        optionsContainer.appendChild(btn);
+    });
+
+    document.getElementById('quiz-feedback').style.display = 'none';
+    document.getElementById('modal-quiz').classList.add('active');
+}
+
+function selectQuizAnswer(selectedIndex, quiz, islandKey, container) {
+    const buttons = container.querySelectorAll('.option-btn');
+    const feedback = document.getElementById('quiz-feedback');
+    
+    buttons.forEach((btn, i) => {
+        btn.disabled = true;
+        if (i === quiz.answer) {
+            btn.classList.add('correct');
+        }
+        if (i === selectedIndex && selectedIndex !== quiz.answer) {
+            btn.classList.add('wrong');
+        }
+    });
+
+    const isCorrect = selectedIndex === quiz.answer;
+    
+    if (isCorrect) {
+        feedback.className = 'feedback correct';
+        feedback.textContent = `✅ Benar! ${quiz.explanation} (+20 poin)`;
+        gameState.score += 20;
+        gameState.completedQuizzes.push(islandKey);
+        gameState.missionsCompleted++;
+        updateUI();
+        saveGame();
+        
+        // Change marker color
+        const island = islands.find(i => i.userData.key === islandKey);
+        if (island) {
+            island.userData.marker.material.color.setHex(0x00ff88);
+            island.userData.marker.material.emissive.setHex(0x00ff88);
+        }
+        
+        if (gameState.completedQuizzes.length >= 7) {
+            setTimeout(() => {
+                document.getElementById('modal-quiz').classList.remove('active');
+                document.getElementById('final-score').textContent = `Skor: ${gameState.score}`;
+                document.getElementById('modal-complete').classList.add('active');
+            }, 2000);
+        }
+    } else {
+        feedback.className = 'feedback wrong';
+        feedback.textContent = `❌ Kurang tepat. ${quiz.explanation}`;
+    }
+    
+    feedback.style.display = 'block';
+}
+
+// ==================== MINI MAP ====================
+function updateMinimap() {
+    const canvas = document.getElementById('minimap-canvas');
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    const scale = w / 300;
+    
+    ctx.clearRect(0, 0, w, h);
+    
+    // Background
+    ctx.fillStyle = 'rgba(0, 20, 40, 0.9)';
+    ctx.fillRect(0, 0, w, h);
+    
+    // Draw islands
+    islands.forEach(island => {
+        const ix = (island.position.x + 150) * scale;
+        const iy = (island.position.z + 150) * scale;
+        
+        ctx.beginPath();
+        ctx.arc(ix, iy, 6, 0, Math.PI * 2);
+        
+        if (gameState.completedQuizzes.includes(island.userData.key)) {
+            ctx.fillStyle = '#00ff88';
+        } else if (gameState.visitedIslands.includes(island.userData.key)) {
+            ctx.fillStyle = '#ffd700';
+        } else {
+            ctx.fillStyle = '#4488aa';
+        }
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    });
+    
+    // Draw player
+    const px = (player.position.x + 150) * scale;
+    const py = (player.position.z + 150) * scale;
+    ctx.beginPath();
+    ctx.arc(px, py, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff4444';
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Border
+    ctx.strokeStyle = '#00e5ff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, w-2, h-2);
+}
+
+// ==================== ANIMATION LOOP ====================
+function animate() {
+    requestAnimationFrame(animate);
+    
+    const delta = clock.getDelta();
+    const time = clock.getElapsedTime();
+    
+    // Ocean animation
+    if (waterMesh) {
+        const positions = waterMesh.geometry.attributes.position;
+        for (let i = 0; i < positions.count; i++) {
+            const x = positions.getX(i);
+            const z = positions.getZ(i);
+            const y = Math.sin(x * 0.1 + time) * 0.3 + Math.cos(z * 0.1 + time * 0.8) * 0.3;
+            positions.setY(i, y);
+        }
+        positions.needsUpdate = true;
+        waterMesh.geometry.computeVertexNormals();
+    }
+    
+    // Cloud animation
+    clouds.forEach(cloud => {
+        cloud.position.x += cloud.userData.speed * delta * 10;
+        if (cloud.position.x > worldSize) {
+            cloud.position.x = -worldSize;
+        }
+    });
+    
+    // Stars rotation
+    if (stars) {
+        stars.rotation.y += delta * 0.005;
+    }
+    
+    // Player movement
+    if (joystickActive || (joystickInput.x !== 0 || joystickInput.y !== 0)) {
+        const speed = 15;
+        const moveX = joystickInput.x * speed * delta;
+        const moveZ = joystickInput.y * speed * delta;
+        
+        player.position.x += moveX;
+        player.position.z += moveZ;
+        
+        // Clamp to world
+        player.position.x = Math.max(-140, Math.min(140, player.position.x));
+        player.position.z = Math.max(-140, Math.min(140, player.position.z));
+        
+        // Rotate player
+        if (Math.abs(moveX) > 0.01 || Math.abs(moveZ) > 0.01) {
+            const targetAngle = Math.atan2(moveX, moveZ);
+            player.rotation.y = targetAngle;
+        }
+        
+        // Bobbing animation
+        player.position.y = Math.abs(Math.sin(time * 8)) * 0.15;
+        gameState.isMoving = true;
+    } else {
+        gameState.isMoving = false;
+        player.position.y = 0;
+    }
+    
+    // Camera follow player
+    const camTargetX = player.position.x;
+    const camTargetZ = player.position.z + 20;
+    const camTargetY = 18;
+    
+    camera.position.x += (camTargetX - camera.position.x) * 0.05;
+    camera.position.z += (camTargetZ - camera.position.z) * 0.05;
+    camera.position.y += (camTargetY - camera.position.y) * 0.05;
+    camera.lookAt(player.position.x, 3, player.position.z);
+    
+    // Island animations
+    islands.forEach(island => {
+        // Marker float
+        const marker = island.userData.marker;
+        if (marker) {
+            marker.position.y = 12 + Math.sin(time * 2 + island.position.x) * 1.5;
+            marker.rotation.y += delta * 2;
+        }
+        
+        // Ring pulse
+        const ring = island.userData.ring;
+        if (ring) {
+            ring.scale.setScalar(1 + Math.sin(time * 1.5 + island.position.z) * 0.08);
+            ring.material.opacity = 0.2 + Math.sin(time * 2 + island.position.x) * 0.15;
+        }
+    });
+    
+    // Check island proximity
+    checkIslandProximity();
+    
+    // Update minimap
+    updateMinimap();
+    
+    renderer.render(scene, camera);
+}
+
+function onResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// ==================== INITIALIZATION ====================
+function init() {
+    // Load saved game
+    const loaded = loadGame();
+    
+    // Setup Three.js
+    initThreeJS();
+    
+    // Setup joystick
+    setupJoystick();
+    
+    // Setup buttons
+    document.getElementById('btn-interact').addEventListener('click', handleInteract);
+    document.getElementById('btn-quiz').addEventListener('click', handleQuiz);
+    document.getElementById('btn-close-info').addEventListener('click', () => {
+        document.getElementById('modal-info').classList.remove('active');
+    });
+    document.getElementById('btn-close-quiz').addEventListener('click', () => {
+        document.getElementById('modal-quiz').classList.remove('active');
+    });
+    document.getElementById('btn-restart').addEventListener('click', () => {
+        resetGame();
+        document.getElementById('modal-complete').classList.remove('active');
+        
+        // Reset visual
+        islands.forEach(island => {
+            island.userData.marker.material.color.setHex(0xffd700);
+            island.userData.marker.material.emissive.setHex(0xffd700);
+        });
+        
+        player.position.set(0, 0, 0);
+        showToast("🔄 Permainan direset!");
+    });
+    
+    // Update UI
+    updateUI();
+    
+    // Hide loading
+    setTimeout(() => {
+        document.getElementById('loading').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('loading').style.display = 'none';
+        }, 800);
+    }, 1000);
+    
+    // Start animation
+    animate();
+    
+    if (loaded) {
+        showToast("💾 Permainan dimuat!");
+        // Restore visual state
+        islands.forEach(island => {
+            const key = island.userData.key;
+            if (gameState.completedQuizzes.includes(key)) {
+                island.userData.marker.material.color.setHex(0x00ff88);
+                island.userData.marker.material.emissive.setHex(0x00ff88);
+            }
+        });
+    } else {
+        showToast("🌏 Selamat datang di Wawasan Nusantara!");
+    }
+}
+
+// Start the game
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
